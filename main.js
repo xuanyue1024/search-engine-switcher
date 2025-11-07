@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         搜索引擎切换工具
 // @namespace    https://greasyfork.org/zh-CN/users/1143571-xuanyue1024
-// @version      0.1.32
-// @description  能在搜索引擎左侧显示一个快速切换列表的油猴脚本，节省「另开搜索引擎」和「输入关键词」的动作和时间，提高搜索效率。在原作者基础上修改了部分内容，[原链接](https://greasyfork.org/zh-CN/scripts/440235)
+// @version      0.1.33
+// @description  能在搜索引擎左侧显示一个快速切换列表的油猴脚本，节省「另开搜索引擎」和「输入关键词」的动作和时间，提高搜索效率。对挡住搜索内容的网站,比如哔哩哔哩和博客园,默认隐藏搜索切换,鼠标放到左侧屏幕边界即可正常展示.在原作者基础上修改了部分内容，[原链接](https://greasyfork.org/zh-CN/scripts/440235)
 // @author       竹林听雨, rockucn
 
 // @match        *://www.baidu.com/s*
@@ -19,6 +19,7 @@
 // @match        *://www.sogou.com/web*
 // @match        *://linux.do/search*
 // @match        *://github.com/search*
+// @match        *://stackoverflow.com/search*
 // @match        *://search.bilibili.com/all*
 // @match        *://zzkx.cnblogs.com/s*
 
