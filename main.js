@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         搜索引擎切换工具
 // @namespace    http://tampermonkey.net/
-// @version      0.1.30
+// @version      0.1.31
 // @description  在搜索引擎左侧显示一个快速切换列表，节省「另开搜索引擎」和「输入关键词」的动作和时间，提高搜索效率。在原作者基础上修改了部分内容，原链接：https://greasyfork.org/zh-CN/scripts/440235。
 // @author       竹林听雨, rockucn
- 
+
 // @match        *://www.baidu.com/s*
 // @match        *://www.baidu.com/baidu*
 // @match        *://duckduckgo.com/*
@@ -19,29 +19,33 @@
 // @match        *://www.sogou.com/web*
 // @match        *://linux.do/search*
 // @match        *://github.com/search*
- 
+// @match        *://search.bilibili.com/all*
+// @match        *://zzkx.cnblogs.com/s*
+
 // @grant        unsafeWindow
 // @grant        window.onload
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-body
- 
+
 // @license     MIT
 // ==/UserScript==
- 
+
 // 搜索网址配置
 const urlMapping = [
   {
-  name: "Bing (CN)",
-  searchUrl: "https://cn.bing.com/search?q=",
-  keyName: "q",
-  testUrl: /https:\/\/cn\.bing\.com\/search.*/,
+    name: "Bing (CN)",
+    searchUrl: "https://cn.bing.com/search?q=",
+    keyName: "q",
+    testUrl: /https:\/\/cn\.bing\.com\/search.*/,
+    hidden: false, // 设置为 true 则默认隐藏
   },
   {
     name: "Google",
     searchUrl: "https://www.google.com/search?q=",
     keyName: "q",
     testUrl: /^https:\/\/(?:www\.)?google\.[a-z.]+\/search/i,
+    hidden: false,
   },
   {
     name: "GitHub 仓库",
@@ -84,6 +88,7 @@ const urlMapping = [
     searchUrl: "https://search.bilibili.com/all?keyword=",
     keyName: "keyword",
     testUrl: /https:\/\/search.bilibili.com\/all.*/,
+    hidden: true,
   },
   {
     name: "微信文章",
@@ -102,6 +107,7 @@ const urlMapping = [
     searchUrl: "https://zzkx.cnblogs.com/s?w=",
     keyName: "w",
     testUrl: /https:\/\/zzkx.cnblogs.com\/s.*/,
+    hidden: true
   },
   {
     name: "linux do",
@@ -122,7 +128,7 @@ const urlMapping = [
     testUrl: /https:\/\/stackoverflow.com\/search.*/,
   },
 ];
- 
+
 // JS获取url参数
 function getQueryVariable(variable) {
   let query = window.location.search.substring(1);
@@ -135,7 +141,7 @@ function getQueryVariable(variable) {
   }
   return null;
 }
- 
+
 // 从url中获取搜索关键词
 function getKeywords() {
   let keywords = "";
@@ -148,7 +154,7 @@ function getKeywords() {
   console.log(keywords);
   return keywords;
 }
- 
+
 // 适配火狐浏览器的百度搜索
 const isFirefox = () => {
   if (navigator.userAgent.indexOf("Firefox") > 0) {
@@ -159,26 +165,67 @@ const isFirefox = () => {
     return;
   }
 };
- 
 
- 
+// 检查当前页面是否需要隐藏面板
+function shouldHidePanel() {
+  for (let item of urlMapping) {
+    if (item.testUrl.test(window.location.href)) {
+      return item.hidden === true;
+    }
+  }
+  return false;
+}
+
 // 添加节点
 function addBox() {
   isFirefox();
+
+  const isHidden = shouldHidePanel();
+
   // 主元素
   const div = document.createElement("div");
   div.id = "search-app-box";
-  div.style = `
+  const baseStyle = `
     position: fixed; 
     top: 140px; 
-    left: 12px; 
+    left: ${isHidden ? '-88px' : '12px'}; 
     width: 88px; 
     background-color: hsla(200, 40%, 96%, .8); 
     font-size: 12px; 
     border-radius: 6px; 
-    z-index: 99999;`;
+    z-index: 99999;
+    transition: left 0.3s ease;`;
+  div.style = baseStyle;
   document.body.insertAdjacentElement("afterbegin", div);
- 
+
+  // 如果需要隐藏,添加触发区域和悬停逻辑
+  if (isHidden) {
+    // 创建触发区域
+    const trigger = document.createElement("div");
+    trigger.style = `
+      position: fixed;
+      top: 140px;
+      left: 0;
+      width: 10px;
+      height: 300px;
+      z-index: 99998;`;
+    document.body.insertAdjacentElement("afterbegin", trigger);
+
+    // 鼠标移入触发区域或面板时显示
+    const showPanel = () => {
+      div.style.left = '12px';
+    };
+
+    // 鼠标移出时隐藏
+    const hidePanel = () => {
+      div.style.left = '-88px';
+    };
+
+    trigger.onmouseenter = showPanel;
+    div.onmouseenter = showPanel;
+    div.onmouseleave = hidePanel;
+  }
+
   // 标题
   let title = document.createElement("span");
   title.innerText = "搜索引擎";
@@ -195,11 +242,11 @@ function addBox() {
     -ms-user-select:none;
     user-select:none;`;
   div.appendChild(title);
- 
+
   // 搜索列表
   for (let index in urlMapping) {
     let item = urlMapping[index];
- 
+
     // 列表样式
     let style = `
         display: block; 
@@ -208,15 +255,15 @@ function addBox() {
         text-decoration: none;`;
     let defaultStyle = style + "color: hsla(211, 60%, 35%, .8) !important;";
     let hoverStyle =
-      style + "background-color: hsla(211, 60%, 35%, .1);";
- 
+        style + "background-color: hsla(211, 60%, 35%, .1);";
+
     // 设置搜索引擎链接
     let a = document.createElement("a");
     a.innerText = item.name;
     a.style = defaultStyle;
     a.className = "search-engine-a";
     a.href = item.searchUrl + getKeywords();
- 
+
     // 鼠标移入&移出效果，相当于hover
     a.onmouseenter = function () {
       this.style = hoverStyle;
@@ -227,7 +274,7 @@ function addBox() {
     div.appendChild(a);
   }
 }
- 
+
 (function () {
   "use strict";
   window.onload = addBox();
