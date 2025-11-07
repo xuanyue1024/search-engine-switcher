@@ -166,6 +166,21 @@ const isFirefox = () => {
   }
 };
 
+// 检查是否为暗色模式
+function isDarkMode() {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+// 获取主题颜色
+function getThemeColors() {
+  const dark = isDarkMode();
+  return {
+    background: dark ? 'hsla(220, 15%, 20%, .9)' : 'hsla(200, 40%, 96%, .8)',
+    text: dark ? 'hsla(210, 20%, 85%, .9)' : 'hsla(211, 60%, 35%, .8)',
+    hover: dark ? 'hsla(220, 15%, 30%, .9)' : 'hsla(211, 60%, 35%, .1)'
+  };
+}
+
 // 检查当前页面是否需要隐藏面板
 function shouldHidePanel() {
   for (let item of urlMapping) {
@@ -181,6 +196,7 @@ function addBox() {
   isFirefox();
 
   const isHidden = shouldHidePanel();
+  const colors = getThemeColors();
 
   // 主元素
   const div = document.createElement("div");
@@ -190,11 +206,13 @@ function addBox() {
     top: 140px; 
     left: ${isHidden ? '-88px' : '12px'}; 
     width: 88px; 
-    background-color: hsla(200, 40%, 96%, .8); 
+    background-color: ${colors.background}; 
     font-size: 12px; 
     border-radius: 6px; 
     z-index: 99999;
-    transition: left 0.3s ease;`;
+    transition: left 0.3s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);`;
   div.style = baseStyle;
   document.body.insertAdjacentElement("afterbegin", div);
 
@@ -231,7 +249,7 @@ function addBox() {
   title.innerText = "搜索引擎";
   title.style = `
     display: block;
-	color: hsla(211, 60%, 35%, .8);
+	color: ${colors.text};
     text-align: center;
     margin-top: 10px; 
     margin-bottom: 5px;
@@ -250,12 +268,12 @@ function addBox() {
     // 列表样式
     let style = `
         display: block; 
-		color: hsla(211, 60%, 35%, .8) !important;
+		color: ${colors.text} !important;
         padding: 8px; 
         text-decoration: none;`;
-    let defaultStyle = style + "color: hsla(211, 60%, 35%, .8) !important;";
+    let defaultStyle = style;
     let hoverStyle =
-        style + "background-color: hsla(211, 60%, 35%, .1);";
+        style + `background-color: ${colors.hover};`;
 
     // 设置搜索引擎链接
     let a = document.createElement("a");
@@ -272,6 +290,13 @@ function addBox() {
       this.style = defaultStyle;
     };
     div.appendChild(a);
+  }
+
+  // 监听系统主题变化,自动更新颜色
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(() => {
+      location.reload(); // 简单方式:刷新页面
+    });
   }
 }
 
